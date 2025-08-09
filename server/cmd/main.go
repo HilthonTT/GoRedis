@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"goredis-server/internal/cache"
 	"goredis-server/internal/data"
+	"goredis-server/internal/messaging"
 	"net"
 	"os"
 	"strings"
@@ -45,6 +46,7 @@ func handleConnection(conn net.Conn) {
 
 			key, value := args[1], args[2]
 			db.Set(key, value)
+			conn.Write([]byte("OK\n"))
 			data.LogCommand("SET", key, value)
 		case "GET":
 			if len(args) != 2 {
@@ -68,6 +70,14 @@ func handleConnection(conn net.Conn) {
 			key := args[1]
 			db.Delete(key)
 			data.LogCommand("DEL", key, "")
+		case "SUBSCRIBE":
+			messaging.HandleSubscribe(conn, args[1])
+			conn.Write([]byte("OK\n"))
+		case "PUBLISH":
+			topic := args[1]
+			message := args[2]
+			messaging.HandlePublish(topic, message)
+			conn.Write([]byte("OK\n"))
 		default:
 			fmt.Fprintln(conn, "ERR unknown command")
 		}
