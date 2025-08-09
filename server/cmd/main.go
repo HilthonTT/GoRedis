@@ -4,13 +4,17 @@ import (
 	"bufio"
 	"fmt"
 	"goredis-server/internal/cache"
+	"goredis-server/internal/data"
 	"net"
+	"os"
 	"strings"
 )
 
 var db = cache.NewShardMap(16)
 
 func main() {
+	loadSnapshot()
+
 	ln, err := net.Listen("tcp", ":6379")
 	if err != nil {
 		panic(err)
@@ -41,6 +45,7 @@ func handleConnection(conn net.Conn) {
 
 			key, value := args[1], args[2]
 			db.Set(key, value)
+			data.LogCommand("SET", key, value)
 		case "GET":
 			if len(args) != 2 {
 				fmt.Fprintln(conn, "ERR wrong arguments")
@@ -62,8 +67,39 @@ func handleConnection(conn net.Conn) {
 
 			key := args[1]
 			db.Delete(key)
+			data.LogCommand("DEL", key, "")
 		default:
 			fmt.Fprintln(conn, "ERR unknown command")
+		}
+	}
+
+	data.LogFile.Close()
+}
+
+func loadSnapshot() {
+	file, err := os.Open("snap.log")
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		cmd := strings.Fields(line)
+
+		cmdUpper := strings.ToUpper(cmd[0])
+		key := cmd[1]
+		switch cmdUpper {
+		case "SET":
+			if len(cmd) < 3 {
+				continue
+			}
+
+			value := cmd[2]
+			db.Set(key, value)
+		case "DEL":
+			db.Delete(key)
 		}
 	}
 }
