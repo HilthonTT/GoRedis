@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"goredis-server/internal/cache"
 	"goredis-server/internal/data"
+	"goredis-server/internal/expiration"
 	"goredis-server/internal/messaging"
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 var db = cache.NewShardMap(16)
 
 func main() {
 	loadSnapshot()
+	defer data.CloseLog()
 
 	ln, err := net.Listen("tcp", ":6379")
 	if err != nil {
@@ -55,6 +58,16 @@ func handleConnection(conn net.Conn) {
 			}
 
 			key := args[1]
+
+			expiry, hasExpiry := expiration.Expirations[key]
+			now := time.Now()
+			if hasExpiry && now.After(expiry) {
+				db.Delete(key)
+				expiration.RemoveExpiration(key)
+				fmt.Fprintln(conn, "(nil)")
+				continue
+			}
+
 			val, ok := db.Get(key)
 			if !ok {
 				fmt.Fprintln(conn, "(nil)")
@@ -78,12 +91,14 @@ func handleConnection(conn net.Conn) {
 			message := args[2]
 			messaging.HandlePublish(topic, message)
 			conn.Write([]byte("OK\n"))
+		case "EXPIRE":
+			key := args[1]
+			seconds, _ := time.ParseDuration(args[2] + "s")
+			expiration.SetExpiration(key, seconds)
 		default:
 			fmt.Fprintln(conn, "ERR unknown command")
 		}
 	}
-
-	data.LogFile.Close()
 }
 
 func loadSnapshot() {
