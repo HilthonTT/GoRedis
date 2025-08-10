@@ -20,13 +20,13 @@ func main() {
 	loadSnapshot(handler.DB)
 	defer data.CloseLog()
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port))
 	if err != nil {
 		panic(err)
 	}
 	defer ln.Close()
 
-	fmt.Println("Server started on port 6379")
+	fmt.Println("Server started on port", cfg.Port)
 
 	for {
 		conn, err := ln.Accept()
@@ -88,20 +88,35 @@ func loadSnapshot(db cache.ShardMap) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		cmd := strings.Fields(line)
+
+		// Split into [timestamp, command...]
+		parts := strings.SplitN(line, " | ", 2)
+		if len(parts) != 2 {
+			continue // malformed line
+		}
+
+		// Parse command from second part
+		cmd := strings.Fields(parts[1])
+		if len(cmd) < 2 {
+			continue // invalid command
+		}
 
 		cmdUpper := strings.ToUpper(cmd[0])
 		key := cmd[1]
+
 		switch cmdUpper {
 		case "SET":
 			if len(cmd) < 3 {
 				continue
 			}
-
 			value := cmd[2]
 			db.Set(key, value)
 		case "DEL":
 			db.Delete(key)
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("error reading snapshot: %v\n", err)
 	}
 }

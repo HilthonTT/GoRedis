@@ -28,7 +28,7 @@ func (m ShardMap) getShardIndex(key string) int {
 	checksum := sha1.Sum([]byte(key))
 	hash := int(checksum[0])
 
-	return hash & len(m)
+	return hash % len(m)
 }
 
 func (m ShardMap) getShard(key string) *Shard {
