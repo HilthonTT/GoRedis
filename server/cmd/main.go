@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"goredis-server/internal/cache"
 	"goredis-server/internal/data"
-	"goredis-server/internal/expiration"
-	"goredis-server/internal/messaging"
+	"goredis-server/internal/handler"
 	"net"
 	"os"
 	"strings"
-	"time"
 )
 
-var db = cache.NewShardMap(16)
-
 func main() {
-	loadSnapshot()
+	handler := handler.NewHandler()
+
+	loadSnapshot(handler.DB)
 	defer data.CloseLog()
 
 	ln, err := net.Listen("tcp", ":6379")
@@ -30,11 +28,12 @@ func main() {
 		if err != nil {
 			continue
 		}
-		go handleConnection(conn)
+		handler.SetConn(conn)
+		go handleConnection(conn, handler)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, handler *handler.Handler) {
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		args := strings.Fields(scanner.Text())
@@ -42,66 +41,22 @@ func handleConnection(conn net.Conn) {
 
 		switch cmd {
 		case "SET":
-			if len(args) != 3 {
-				fmt.Fprintln(conn, "ERR wrong arguments")
-				continue
-			}
-
-			key, value := args[1], args[2]
-			db.Set(key, value)
-			conn.Write([]byte("OK\n"))
-			data.LogCommand("SET", key, value)
+			handler.Set(args)
 		case "GET":
-			if len(args) != 2 {
-				fmt.Fprintln(conn, "ERR wrong arguments")
-				continue
-			}
-
-			key := args[1]
-
-			expiry, hasExpiry := expiration.Expirations[key]
-			now := time.Now()
-			if hasExpiry && now.After(expiry) {
-				db.Delete(key)
-				expiration.RemoveExpiration(key)
-				fmt.Fprintln(conn, "(nil)")
-				continue
-			}
-
-			val, ok := db.Get(key)
-			if !ok {
-				fmt.Fprintln(conn, "(nil)")
-			} else {
-				fmt.Fprintln(conn, val)
-			}
-		case "DEL":
-			if len(args) != 2 {
-				fmt.Fprintln(conn, "ERR wrong arguments")
-				continue
-			}
-
-			key := args[1]
-			db.Delete(key)
-			data.LogCommand("DEL", key, "")
+			handler.Get(args)
 		case "SUBSCRIBE":
-			messaging.HandleSubscribe(conn, args[1])
-			conn.Write([]byte("OK\n"))
+			handler.Subscribe(args)
 		case "PUBLISH":
-			topic := args[1]
-			message := args[2]
-			messaging.HandlePublish(topic, message)
-			conn.Write([]byte("OK\n"))
+			handler.Publish(args)
 		case "EXPIRE":
-			key := args[1]
-			seconds, _ := time.ParseDuration(args[2] + "s")
-			expiration.SetExpiration(key, seconds)
+			handler.Expire(args)
 		default:
 			fmt.Fprintln(conn, "ERR unknown command")
 		}
 	}
 }
 
-func loadSnapshot() {
+func loadSnapshot(db cache.ShardMap) {
 	file, err := os.Open("snap.log")
 	if err != nil {
 		return
