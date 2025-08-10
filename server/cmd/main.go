@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"goredis-server/internal/cache"
+	"goredis-server/internal/config"
 	"goredis-server/internal/data"
 	"goredis-server/internal/handler"
 	"net"
@@ -12,15 +13,19 @@ import (
 )
 
 func main() {
+	cfg := config.NewConfig()
+
 	handler := handler.NewHandler()
 
 	loadSnapshot(handler.DB)
 	defer data.CloseLog()
 
-	ln, err := net.Listen("tcp", ":6379")
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
 		panic(err)
 	}
+	defer ln.Close()
+
 	fmt.Println("Server started on port 6379")
 
 	for {
@@ -29,15 +34,32 @@ func main() {
 			continue
 		}
 		handler.SetConn(conn)
-		go handleConnection(conn, handler)
+		go handleConnection(conn, handler, cfg)
 	}
 }
 
-func handleConnection(conn net.Conn, handler *handler.Handler) {
+func handleConnection(conn net.Conn, handler *handler.Handler, cfg *config.Config) {
+	defer conn.Close()
+
 	scanner := bufio.NewScanner(conn)
+	authenticated := false
+
 	for scanner.Scan() {
 		args := strings.Fields(scanner.Text())
 		cmd := strings.ToUpper(args[0])
+
+		if !authenticated {
+			if strings.ToUpper(args[0]) == "AUTH" {
+				authenticated = handler.Auth(args, cfg)
+				if !authenticated {
+					fmt.Fprintln(conn, "ERR invalid username or password")
+					return // close connection
+				}
+			} else {
+				fmt.Fprintln(conn, "NOAUTH Authentication required.")
+			}
+			continue
+		}
 
 		switch cmd {
 		case "SET":

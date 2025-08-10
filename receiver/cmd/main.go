@@ -15,6 +15,10 @@ func main() {
 
 	fmt.Println("Connected to server!")
 
+	// Send AUTH before anything else
+	fmt.Fprintln(conn, "AUTH guest guest")
+
+	// Then send your actual command
 	fmt.Fprintln(conn, "SUBSCRIBE news")
 
 	scanner := bufio.NewScanner(conn)

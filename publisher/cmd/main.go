@@ -14,6 +14,8 @@ func main() {
 
 	fmt.Println("Connected to server!")
 
+	fmt.Fprintln(conn, "AUTH guest guest")
+
 	fmt.Fprintln(conn, "PUBLISH news HelloSubscribers!")
 	fmt.Println("Published message.")
 }
