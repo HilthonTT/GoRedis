@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
+	"time"
 )
 
 type Client struct {
 	conn    net.Conn
 	scanner *bufio.Scanner
+	mu      sync.RWMutex
 }
 
 type Options struct {
@@ -20,7 +23,7 @@ type Options struct {
 }
 
 func NewClient(opt *Options) (*Client, error) {
-	conn, err := net.Dial("tcp", opt.Addr)
+	conn, err := net.DialTimeout("tcp", opt.Addr, 5*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s: %w", opt.Addr, err)
 	}
@@ -29,6 +32,9 @@ func NewClient(opt *Options) (*Client, error) {
 		conn:    conn,
 		scanner: bufio.NewScanner(conn),
 	}
+
+	buf := make([]byte, 0, 64*1024)
+	client.scanner.Buffer(buf, 1024*1024)
 
 	// AUTH command (fmt.Fprintln adds newline automatically)
 	authCmd := fmt.Sprintf("AUTH %s %s", opt.Username, opt.Password)
@@ -51,6 +57,9 @@ func NewClient(opt *Options) (*Client, error) {
 }
 
 func (c *Client) Get(key string) (string, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	cmd := fmt.Sprintf("GET %s", key)
 	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
 		return "", fmt.Errorf("failed to send GET command: %w", err)
@@ -69,6 +78,9 @@ func (c *Client) Get(key string) (string, error) {
 }
 
 func (c *Client) Set(key, value string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	cmd := fmt.Sprintf("SET %s %s", key, value)
 	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
 		return fmt.Errorf("failed to send SET command: %w", err)

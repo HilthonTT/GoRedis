@@ -9,6 +9,7 @@ import (
 	"goredis-server/internal/handler"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -20,13 +21,13 @@ func main() {
 	loadSnapshot(handler.DB)
 	defer data.CloseLog()
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port))
+	ln, err := net.Listen("tcp", net.JoinHostPort(cfg.BindAddr, strconv.Itoa(cfg.Port)))
 	if err != nil {
 		panic(err)
 	}
 	defer ln.Close()
 
-	fmt.Println("Server started on port", cfg.Port)
+	fmt.Printf("Server started on port %d\n", cfg.Port)
 
 	for {
 		conn, err := ln.Accept()
