@@ -98,6 +98,56 @@ func (c *Client) Set(key, value string) error {
 	return nil
 }
 
+func (c *Client) Publish(channel, value string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cmd := fmt.Sprintf("PUBLISH %s %s", channel, value)
+	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
+		return fmt.Errorf("failed to send PUBLISH command: %w", err)
+	}
+
+	resp, err := c.readResponse()
+	if err != nil {
+		return fmt.Errorf("failed to read PUBLISH response: %w", err)
+	}
+
+	if resp != "OK" {
+		return fmt.Errorf("PUBLISH failed: %s", resp)
+	}
+
+	return nil
+}
+
+func (c *Client) Subscribe(channel string, onMessage func(msg string), onError func(error)) error {
+	if strings.TrimSpace(channel) == "" {
+		return fmt.Errorf("channel name cannot be empty")
+	}
+
+	c.mu.Lock()
+	_, err := fmt.Fprintf(c.conn, "SUBSCRIBE %s\n", channel)
+	c.mu.Unlock()
+	if err != nil {
+		return fmt.Errorf("failed to send SUBSCRIBE command: %w", err)
+	}
+
+	go func() {
+		for c.scanner.Scan() {
+			msg := strings.TrimSpace(c.scanner.Text())
+			if msg != "" && msg != "OK" {
+				onMessage(msg)
+			}
+		}
+
+		if err := c.scanner.Err(); err != nil {
+			onError(fmt.Errorf("subscribe listen error: %w", err))
+		} else {
+			onError(nil)
+		}
+	}()
+	return nil
+}
+
 func (c *Client) Close() {
 	c.conn.Close()
 }

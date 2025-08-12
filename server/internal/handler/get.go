@@ -8,7 +8,7 @@ import (
 
 func (h *Handler) Get(args []string) {
 	if len(args) != 2 {
-		fmt.Fprintln(h.conn, "ERR wrong arguments")
+		h.conn.Write([]byte("ERR wrong number of arguments for 'GET'\n"))
 		return
 	}
 

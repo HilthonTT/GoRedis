@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"fmt"
 	"goredis-server/internal/data"
 )
 
 func (h *Handler) Set(args []string) {
 	if len(args) != 3 {
-		fmt.Fprintln(h.conn, "ERR wrong arguments")
+		h.conn.Write([]byte("ERR wrong number of arguments for 'SET'\n"))
 		return
 	}
 

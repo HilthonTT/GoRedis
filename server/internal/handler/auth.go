@@ -7,7 +7,7 @@ import (
 
 func (h *Handler) Auth(args []string, cfg *config.Config) bool {
 	if len(args) != 3 {
-		fmt.Fprintln(h.conn, "ERR wrong number of arguments for 'AUTH'")
+		h.conn.Write([]byte("ERR wrong number of arguments for 'AUTH'\n"))
 		return false
 	}
 
