@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"net/http"
+
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
 )
@@ -21,6 +23,7 @@ func NewCookieStore(opts SessionOptions) *sessions.CookieStore {
 	store.Options.Path = "/"
 	store.Options.HttpOnly = opts.HttpOnly
 	store.Options.Secure = opts.Secure
+	store.Options.SameSite = http.SameSiteLaxMode
 
 	gothic.Store = store
 

@@ -21,11 +21,10 @@ type AuthService interface {
 type authService struct{}
 
 func NewAuthService() *authService {
-
 	goth.UseProviders(
 		github.New(
 			config.Envs.GithubClientID,
-			config.Envs.GithubClientID,
+			config.Envs.GithubClientSecret,
 			buildCallbackURL("github"),
 		),
 		discord.New(
