@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"goredis-receiver/internal/client"
+	"goredis-shared/redis"
 	"log"
 	"time"
 )
 
 func main() {
-	cli, err := client.NewClient(&client.Options{
+	cli, err := redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
 		Username: "guest",
 		Password: "guest",
@@ -36,12 +36,12 @@ func main() {
 
 	done := make(chan struct{})
 
-	err = cli.Subscribe("news", func(msg string) {
-		fmt.Println("Got message from subscription:", msg)
-	}, func(err error) {
-		fmt.Println("Subscription error:", err)
-		close(done)
-	})
+	// err = cli.Subscribe("news", func(msg string) {
+	// 	fmt.Println("Got message from subscription:", msg)
+	// }, func(err error) {
+	// 	fmt.Println("Subscription error:", err)
+	// close(done)
+	// })
 
 	if err != nil {
 		log.Fatal("SUBSCRIBE failed:", err)
@@ -53,7 +53,22 @@ func main() {
 		cli.Publish("news", "BreakingNews!")
 	}()
 
+	// 4. Test SADD
+	fmt.Println("Adding fruits to 'myset'...")
+	if err := cli.SAdd("myset", "apple", "banana", "cherry"); err != nil {
+		log.Fatal("SADD failed:", err)
+	}
+
+	// 5. Test SMEMBERS
+	fmt.Println("Getting members of 'myset'...")
+	members, err := cli.SMembers("myset")
+	if err != nil {
+		log.Fatal("SMEMBERS failed:", err)
+	}
+	fmt.Println("Members:", members)
+
 	// Wait here until the subscription signals it has ended
+	close(done)
 	<-done
 	fmt.Println("Subscription ended, exiting")
 }

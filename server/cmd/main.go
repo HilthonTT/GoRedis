@@ -62,6 +62,8 @@ func handleConnection(conn net.Conn, handler *handler.Handler, cfg *config.Confi
 			continue
 		}
 
+		fmt.Printf("CMD: %v\n", cmd)
+
 		switch cmd {
 		case "SET":
 			handler.Set(args)
@@ -73,6 +75,12 @@ func handleConnection(conn net.Conn, handler *handler.Handler, cfg *config.Confi
 			handler.Publish(args)
 		case "EXPIRE":
 			handler.Expire(args)
+		case "SADD":
+			handler.SAdd(args)
+		case "SMEMBERS":
+			handler.SMembers(args)
+		case "SREM":
+			handler.SRem(args)
 		default:
 			fmt.Fprintln(conn, "ERR unknown command")
 		}

@@ -98,6 +98,40 @@ func (c *Client) Set(key, value string) error {
 	return nil
 }
 
+func (c *Client) Delete(key string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cmd := fmt.Sprintf("DEL %s", key)
+	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
+		return fmt.Errorf("failed to send DEL command: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Client) SRem(key string, members ...string) error {
+	if len(members) == 0 {
+		return nil
+	}
+
+	cmd := "SREM " + key
+	for _, m := range members {
+		cmd += " " + m
+	}
+
+	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
+		return fmt.Errorf("failed to send SREM command: %w", err)
+	}
+
+	_, err := c.readResponse()
+	if err != nil {
+		return fmt.Errorf("failed to read SREM response: %w", err)
+	}
+
+	return nil
+}
+
 func (c *Client) Publish(channel, value string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -146,6 +180,64 @@ func (c *Client) Subscribe(channel string, onMessage func(msg string), onError f
 		}
 	}()
 	return nil
+}
+
+func (c *Client) SAdd(key string, members ...string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cmd := fmt.Sprintf("SADD %s %s", key, strings.Join(members, " "))
+	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
+		return fmt.Errorf("failed to send SADD command: %w", err)
+	}
+
+	resp, err := c.readResponse()
+	if err != nil {
+		return fmt.Errorf("failed to read SADD response: %w", err)
+	}
+
+	if resp == "(error)" {
+		return fmt.Errorf("SADD failed: %s", resp)
+	}
+	return nil
+}
+
+func (c *Client) SMembers(key string) ([]string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	cmd := fmt.Sprintf("SMEMBERS %s", key)
+	if _, err := fmt.Fprintln(c.conn, cmd); err != nil {
+		return nil, fmt.Errorf("failed to send SMEMBERS command: %w", err)
+	}
+
+	line, err := c.readResponse()
+	if err != nil {
+		return nil, err
+	}
+
+	var n int
+	if _, err := fmt.Sscanf(line, "*%d", &n); err != nil {
+		return nil, fmt.Errorf("invalid array header: %s", line)
+	}
+
+	members := make([]string, 0, n)
+	for i := 0; i < n; i++ {
+		// Read bulk string length (skip it)
+		_, err := c.readResponse()
+		if err != nil {
+			return nil, err
+		}
+
+		// Read actual value
+		val, err := c.readResponse()
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, val)
+	}
+
+	return members, nil
 }
 
 func (c *Client) Close() {

@@ -127,3 +127,72 @@ func (m ShardMap) KeyValues() []KeyValuePair {
 
 	return kv
 }
+
+func (m ShardMap) SAdd(key string, members ...string) int {
+	shard := m.getShard(key)
+
+	shard.Lock()
+	defer shard.Unlock()
+
+	// Retrieve the existing set or create a new one
+	set, ok := shard.data[key].(map[string]struct{})
+	if !ok {
+		set = make(map[string]struct{})
+		shard.data[key] = set
+	}
+
+	added := 0
+	for _, member := range members {
+		if _, exists := set[member]; !exists {
+			set[member] = struct{}{}
+			added++
+		}
+	}
+
+	return added
+}
+
+func (m ShardMap) SMembers(key string) []string {
+	shard := m.getShard(key)
+
+	shard.RLock()
+	defer shard.RUnlock()
+
+	set, ok := shard.data[key].(map[string]struct{})
+	if !ok {
+		return nil
+	}
+
+	members := make([]string, 0, len(set))
+	for member := range set {
+		members = append(members, member)
+	}
+
+	return members
+}
+
+func (m ShardMap) SRem(key string, members ...string) int {
+	shard := m.getShard(key)
+
+	shard.Lock()
+	defer shard.Unlock()
+
+	set, ok := shard.data[key].(map[string]struct{})
+	if !ok || len(set) == 0 {
+		return 0 // nothing to remove
+	}
+
+	removed := 0
+	for _, member := range members {
+		if _, exists := set[member]; exists {
+			delete(set, member)
+			removed++
+		}
+	}
+
+	if len(set) == 0 {
+		delete(shard.data, key)
+	}
+
+	return removed
+}
