@@ -8,6 +8,7 @@ import (
 	"goredis-shared/env"
 	"goredis-shared/redis"
 	"goredis-web/internal/infrastructure/handler"
+	"goredis-web/internal/infrastructure/repository"
 	"log"
 	"net/http"
 	"os"
@@ -36,7 +37,10 @@ func main() {
 	}
 	defer cli.Close()
 
-	/// Init auth store
+	// Init repositories
+	todoItemRepository := repository.NewTodoItemRepository(cli)
+
+	// Init auth store
 	cookieStore := auth.NewCookieStore(auth.SessionOptions{
 		CookiesKey: config.Envs.CookiesAuthSecret,
 		MaxAge:     config.Envs.CookiesAuthAgeInSeconds,
@@ -50,11 +54,14 @@ func main() {
 	// Setup Gin router
 	router := gin.Default()
 
-	h := handler.NewHandler(authService, cli)
+	h := handler.NewHandler(authService, todoItemRepository)
 	router.GET("/login", h.HandleLogin)
 	router.GET("/auth/:provider/callback", h.HandleCallbackFunction)
 	router.GET("/auth/logout/:provider", h.HandleLogout)
 	router.GET("/auth/:provider", h.HandleProviderLogin)
+	router.GET("/", h.HandleHome)
+	router.POST("/todos", h.HandleCreateTodo)
+	router.GET("/todos/create", h.HandleCreateTodoPage)
 
 	_, b, _, _ := runtime.Caller(0)                  // gets this file's path
 	basePath := filepath.Join(filepath.Dir(b), "..") // go up one level

@@ -31,5 +31,5 @@ type TodoItemRepository interface {
 	GetByID(ctx context.Context, id string) (*TodoItem, error)
 	Create(ctx context.Context, todo *TodoItem) error
 	Update(ctx context.Context, todo *TodoItem) error
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, todo *TodoItem) error
 }

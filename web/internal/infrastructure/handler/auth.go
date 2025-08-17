@@ -31,9 +31,14 @@ func (h *Handler) HandleCallbackFunction(c *gin.Context) {
 	provider := c.Param("provider")
 	c.Request = gothic.GetContextWithProvider(c.Request, provider)
 
-	_, err := gothic.CompleteUserAuth(c.Writer, c.Request)
+	user, err := gothic.CompleteUserAuth(c.Writer, c.Request)
 	if err != nil {
 		respondInternalError(c, "Authentication failed: "+err.Error())
+		return
+	}
+
+	if err := h.auth.StoreUserSession(c.Writer, c.Request, user); err != nil {
+		respondInternalError(c, "Failed to store user session: "+err.Error())
 		return
 	}
 

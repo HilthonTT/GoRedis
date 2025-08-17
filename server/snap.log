@@ -1,0 +1,2 @@
+2025-08-17T21:33:08+02:00 | SET todo:0aff58f0-909d-4ff3-b365-affe390347b7 {"id":"0aff58f0-909d-4ff3-b365-affe390347b7","userId":"716263784481685535","description":"test","dueDate":"2025-08-21T00:00:00Z","labels":["Work"],"isCompleted":false,"createdAt":"2025-08-17T21:33:08.0406808+02:00","completedAt":null,"priority":0}
+2025-08-17T21:33:08+02:00 | SADD user:716263784481685535:todos 0aff58f0-909d-4ff3-b365-affe390347b7

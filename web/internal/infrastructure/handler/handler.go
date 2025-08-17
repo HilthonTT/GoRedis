@@ -1,22 +1,24 @@
 package handler
 
 import (
+	"bytes"
 	"goredis-shared/auth"
-	"goredis-shared/redis"
+	"goredis-web/internal/domain"
 	"net/http"
 
+	"github.com/a-h/templ"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
-	auth  auth.AuthService
-	redis *redis.Client
+	auth       auth.AuthService
+	repository domain.TodoItemRepository
 }
 
-func NewHandler(auth auth.AuthService, redis *redis.Client) *Handler {
+func NewHandler(auth auth.AuthService, repository domain.TodoItemRepository) *Handler {
 	return &Handler{
-		auth:  auth,
-		redis: redis,
+		auth:       auth,
+		repository: repository,
 	}
 }
 
@@ -50,4 +52,19 @@ func respondWithError(ctx *gin.Context, code int, message string) {
 
 func respondInternalError(ctx *gin.Context, message string) {
 	respondWithError(ctx, http.StatusInternalServerError, message)
+}
+
+func respondHTML(c *gin.Context, buffer []byte) {
+	c.Data(200, "text/html; charset=utf-8", buffer)
+}
+
+func renderHTML(c *gin.Context, template templ.Component) ([]byte, error) {
+	buffer := bytes.NewBuffer(nil)
+
+	err := template.Render(c, buffer)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return buffer.Bytes(), nil
 }
