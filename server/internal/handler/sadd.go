@@ -12,8 +12,24 @@ func (h *Handler) SAdd(args []string) {
 		return
 	}
 
-	key := args[1]
-	members := args[2:]
+	key := strings.TrimSpace(args[1])
+	if key == "" {
+		h.conn.Write([]byte("ERR empty key is not allowed\n"))
+		return
+	}
+
+	var members []string
+	for _, m := range args[2:] {
+		m = strings.TrimSpace(m)
+		if m != "" {
+			members = append(members, m)
+		}
+	}
+
+	if len(members) == 0 {
+		h.conn.Write([]byte("ERR no valid members to add\n"))
+		return
+	}
 
 	added := h.DB.SAdd(key, members...)
 

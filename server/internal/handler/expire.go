@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"fmt"
 	"goredis-server/internal/expiration"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -11,8 +14,20 @@ func (h *Handler) Expire(args []string) {
 		return
 	}
 
-	key := args[1]
+	key := strings.TrimSpace(args[1])
+	if key == "" {
+		h.conn.Write([]byte("ERR empty key is not allowed\n"))
+		return
+	}
 
-	seconds, _ := time.ParseDuration(args[2] + "s")
-	expiration.SetExpiration(key, seconds)
+	secondsStr := strings.TrimSpace(args[2])
+	secondsInt, err := strconv.Atoi(secondsStr)
+	if err != nil || secondsInt < 0 {
+		h.conn.Write([]byte("ERR value is not an integer or out of range\n"))
+		return
+	}
+
+	expiration.SetExpiration(key, time.Duration(secondsInt)*time.Second)
+
+	fmt.Fprintln(h.conn, 1)
 }

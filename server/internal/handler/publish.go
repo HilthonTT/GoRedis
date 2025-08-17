@@ -1,6 +1,9 @@
 package handler
 
-import "goredis-server/internal/messaging"
+import (
+	"goredis-server/internal/messaging"
+	"strings"
+)
 
 func (h *Handler) Publish(args []string) {
 	if len(args) != 3 {
@@ -8,9 +11,20 @@ func (h *Handler) Publish(args []string) {
 		return
 	}
 
-	topic := args[1]
-	message := args[2]
+	topic := strings.TrimSpace(args[1])
+	message := strings.TrimSpace(args[2])
+
+	if topic == "" {
+		h.conn.Write([]byte("ERR empty topic is not allowed\n"))
+		return
+	}
+
+	if message == "" {
+		h.conn.Write([]byte("ERR empty message is not allowed\n"))
+		return
+	}
 
 	messaging.HandlePublish(topic, message)
+
 	h.conn.Write([]byte("OK\n"))
 }

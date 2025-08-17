@@ -2,6 +2,7 @@ package handler
 
 import (
 	"goredis-server/internal/data"
+	"strings"
 )
 
 func (h *Handler) Set(args []string) {
@@ -10,7 +11,13 @@ func (h *Handler) Set(args []string) {
 		return
 	}
 
-	key, value := args[1], args[2]
+	key := strings.TrimSpace(args[1])
+	value := strings.TrimSpace(args[2])
+
+	if key == "" {
+		h.conn.Write([]byte("ERR empty key is not allowed\n"))
+		return
+	}
 
 	h.DB.Set(key, value)
 	h.conn.Write([]byte("OK\n"))

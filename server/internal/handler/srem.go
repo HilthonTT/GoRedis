@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"goredis-server/internal/data"
+	"strings"
 )
 
 func (h *Handler) SRem(args []string) {
@@ -12,8 +13,17 @@ func (h *Handler) SRem(args []string) {
 		return
 	}
 
-	key := args[1]
+	key := strings.TrimSpace(args[1])
+	if key == "" {
+		h.conn.Write([]byte("ERR empty key is not allowed\n"))
+		return
+	}
+
 	members := args[2:]
+	if len(members) == 0 {
+		h.conn.Write([]byte("ERR no members provided for SREM\n"))
+		return
+	}
 
 	removedCount := h.DB.SRem(key, members...)
 

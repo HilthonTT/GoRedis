@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"goredis-server/internal/config"
+	"strings"
 )
 
 func (h *Handler) Auth(args []string, cfg *config.Config) bool {
@@ -11,10 +13,18 @@ func (h *Handler) Auth(args []string, cfg *config.Config) bool {
 		return false
 	}
 
-	username := args[1]
-	password := args[2]
+	username := strings.TrimSpace(args[1])
+	password := strings.TrimSpace(args[2])
 
-	if username == cfg.Username && password == cfg.Password {
+	if username == "" || password == "" {
+		h.conn.Write([]byte("ERR username and password cannot be empty\n"))
+		return false
+	}
+
+	userMatch := subtle.ConstantTimeCompare([]byte(username), []byte(cfg.Username)) == 1
+	passMatch := subtle.ConstantTimeCompare([]byte(password), []byte(cfg.Password)) == 1
+
+	if userMatch && passMatch {
 		fmt.Fprintln(h.conn, "OK")
 		return true
 	}
