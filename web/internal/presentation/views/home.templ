@@ -1,5 +1,117 @@
 package views
 
-templ Home() {
-    <div>Home</div>
+import (
+	"fmt"
+	"goredis-web/internal/domain"
+	"goredis-web/internal/presentation/layouts"
+	"goredis-web/internal/infrastructure/utils"
+	"github.com/markbates/goth"
+)
+
+templ Home(user goth.User, todos []*domain.TodoItem) {
+	@layouts.RootLayout(user) {
+		<div class="mx-auto max-w-3xl p-6">
+			<div class="mb-6 flex items-center justify-between">
+				<h1 class="text-2xl font-semibold tracking-tight">Your Todos</h1>
+				<a
+                    href="/todos/new"
+					class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+					New Todo
+				</a>
+			</div>
+
+			if len(todos) == 0 {
+				<div class="rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+					<p class="text-gray-600">No todos yet.</p>
+					<p class="text-gray-400 text-sm">Click “New Todo” to create your first item.</p>
+				</div>
+			} else {
+				<div class="flex flex-col gap-y-3">
+					for _, t := range todos {
+						@TodoItem(t)
+					}
+				</div>
+			}
+
+			<!-- Optional modal mount for HTMX partials -->
+			<div id="modal"></div>
+		</div>
+	}
+}
+
+templ TodoItem(t *domain.TodoItem) {
+	<div id={ "todo-" + t.ID } class="group flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow transition">
+		<!-- Completion checkbox -->
+		<input
+			type="checkbox"
+			checked?={ t.IsCompleted }
+			class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+			hx-post={ fmt.Sprintf("/todos/%s/toggle", t.ID) }
+			hx-target={ "#todo-" + t.ID }
+			hx-swap="outerHTML" />
+
+		<!-- Main content -->
+		<div class="min-w-0 flex-1">
+			<div class="flex flex-wrap items-center gap-2">
+				<span class={ utils.PriorityBadgeClasses(t.Priority) }>
+					{ utils.PriorityLabel(t.Priority) }
+				</span>
+
+				<!-- Labels -->
+				for _, lbl := range t.Labels {
+					<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-200">
+						{ lbl }
+					</span>
+				}
+			</div>
+
+			<!-- Description -->
+			<p class={ "mt-2 text-sm " + utils.Tern(t.IsCompleted, "text-gray-400 line-through", "text-gray-900") }>
+				{ t.Description }
+			</p>
+
+			<!-- Meta -->
+			<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+				<div class={ "inline-flex items-center gap-1 " + utils.DueClasses(t.DueDate, t.IsCompleted) }>
+					<!-- calendar icon -->
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+							d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+					</svg>
+					<span>Due: { utils.FormatDue(t.DueDate) }</span>
+				</div>
+
+				if !t.IsCompleted {
+					<div class="inline-flex items-center gap-1 text-gray-500">
+						<!-- clock icon -->
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+								d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+						</svg>
+						<span>Created { t.CreatedAt.UTC().Format("2006-01-02 15:04") }</span>
+					</div>
+				}
+			</div>
+		</div>
+
+		<!-- Actions -->
+		<div class="flex shrink-0 items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+			<button
+				class="rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+				hx-get={ fmt.Sprintf("/todos/%s/edit", t.ID) }
+				hx-target="#modal"
+				hx-swap="innerHTML">
+				Edit
+			</button>
+
+			<button
+				class="rounded-xl bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+				hx-delete={ fmt.Sprintf("/todos/%s", t.ID) }
+				hx-target={ "#todo-" + t.ID }
+				hx-swap="outerHTML"
+				hx-confirm="Delete this todo?">
+				Delete
+			</button>
+		</div>
+	</div>
 }

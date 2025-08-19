@@ -36,7 +36,6 @@ func NewClient(opt *Options) (*Client, error) {
 	buf := make([]byte, 0, 64*1024)
 	client.scanner.Buffer(buf, 1024*1024)
 
-	// AUTH command (fmt.Fprintln adds newline automatically)
 	authCmd := fmt.Sprintf("AUTH %s %s", opt.Username, opt.Password)
 	if _, err := fmt.Fprintln(client.conn, authCmd); err != nil {
 		client.Close()
@@ -78,6 +77,10 @@ func (c *Client) Get(key string) (string, error) {
 }
 
 func (c *Client) Set(key, value string) error {
+	if c == nil || c.conn == nil || c.scanner == nil {
+		return errors.New("redis client is not initialized")
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -89,6 +92,11 @@ func (c *Client) Set(key, value string) error {
 	resp, err := c.readResponse()
 	if err != nil {
 		return fmt.Errorf("failed to read SET response: %w", err)
+	}
+
+	if strings.HasPrefix(resp, "ERR") {
+
+		return fmt.Errorf("redis error: %s", resp)
 	}
 
 	if resp != "OK" {
@@ -234,6 +242,7 @@ func (c *Client) SMembers(key string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		members = append(members, val)
 	}
 
@@ -245,6 +254,10 @@ func (c *Client) Close() {
 }
 
 func (c *Client) readResponse() (string, error) {
+	if c == nil || c.scanner == nil {
+		return "", errors.New("client or scanner is not initialized")
+	}
+
 	if c.scanner.Scan() {
 		return strings.TrimSpace(c.scanner.Text()), nil
 	}

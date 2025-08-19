@@ -4,7 +4,6 @@ import (
 	"goredis-shared/validation"
 	"goredis-web/internal/domain"
 	"goredis-web/internal/presentation/views"
-	"log"
 	"net/http"
 	"time"
 
@@ -18,13 +17,13 @@ const (
 )
 
 func (h *Handler) HandleCreateTodoPage(c *gin.Context) {
-	_, err := h.auth.GetSessionUser(c.Request)
+	user, err := h.auth.GetSessionUser(c.Request)
 	if err != nil {
 		redirect(c, "/")
 		return
 	}
 
-	buffer, err := renderHTML(c, views.AddTodoView())
+	buffer, err := renderHTML(c, views.AddTodoView(user))
 	if err != nil {
 		redirect(c, "/")
 		return
@@ -41,10 +40,10 @@ type CreateTodoRequest struct {
 }
 
 func (h *Handler) HandleCreateTodo(c *gin.Context) {
-	log.Print("Hit here!")
 
 	user, err := h.auth.GetSessionUser(c.Request)
 	if err != nil {
+
 		respondWithError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -63,7 +62,7 @@ func (h *Handler) HandleCreateTodo(c *gin.Context) {
 
 	v := validation.NewValidator()
 	if err := v.Struct(data); err != nil {
-		component := views.AddTodoView()
+		component := views.AddTodoView(user)
 		component.Render(c, c.Writer)
 		return
 	}
@@ -90,6 +89,7 @@ func (h *Handler) HandleCreateTodo(c *gin.Context) {
 	}
 
 	if err := h.repository.Create(c.Request.Context(), todo); err != nil {
+
 		respondInternalError(c, "failed to create todo")
 		return
 	}

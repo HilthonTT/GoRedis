@@ -3,7 +3,7 @@ module goredis-web
 go 1.24.5
 
 require (
-	github.com/a-h/templ v0.3.937
+	github.com/a-h/templ v0.3.943
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/google/uuid v1.6.0

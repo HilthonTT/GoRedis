@@ -1,8 +1,10 @@
 package layouts
 
 import "fmt"
+import "github.com/markbates/goth"
+import "strings"
 
-templ RootLayout() {
+templ RootLayout(user goth.User) {
 	<!DOCTYPE html>
 	<html lang="en" class="dark">
 		<head>
@@ -11,6 +13,7 @@ templ RootLayout() {
 			<script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
 			<link rel="stylesheet" href="/static/css/styles.css"/>
             <link rel="icon" type="image/svg+xml" href="/static/images/redis.svg">
+            <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 			<title>GoRedis</title>
 		</head>
 		<body class="bg-gray-50 text-gray-900">
@@ -31,16 +34,20 @@ templ RootLayout() {
                 <!-- Bottom User Section -->
                 <div class="p-6 border-t border-red-800">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-red-400 rounded-full flex items-center justify-center text-red-900 font-bold">H</div>
+                        if user.Name != "" {
+                            <div class="w-10 h-10 bg-red-400 rounded-full flex items-center justify-center text-red-900 font-bold">
+                                { strings.ToUpper(string([]rune(user.Name)[0])) }
+                            </div>
+                        }
                         <div>
-                            <p class="text-sm font-medium">Hilthon</p>
+                            <p class="text-sm font-medium">{ user.Name }</p>
                             <p class="text-xs text-red-200">Admin</p>
                         </div>
                     </div>
                 </div>
             </nav>
 
-			<main class="ml-[260px] flex items-center justify-center min-h-screen p-6">
+			<main class="ml-[260px] min-h-screen p-6">
 				{ children... }
 			</main>
 		</body>

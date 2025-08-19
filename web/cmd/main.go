@@ -61,7 +61,7 @@ func main() {
 	router.GET("/auth/:provider", h.HandleProviderLogin)
 	router.GET("/", h.HandleHome)
 	router.POST("/todos", h.HandleCreateTodo)
-	router.GET("/todos/create", h.HandleCreateTodoPage)
+	router.GET("/todos/new", h.HandleCreateTodoPage)
 
 	_, b, _, _ := runtime.Caller(0)                  // gets this file's path
 	basePath := filepath.Join(filepath.Dir(b), "..") // go up one level

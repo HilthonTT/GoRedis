@@ -118,8 +118,18 @@ func loadSnapshot(db cache.ShardMap) {
 			if len(cmd) < 3 {
 				continue
 			}
-			value := cmd[2]
+
+			key := strings.TrimSpace(cmd[1])
+			value := strings.Join(cmd[2:], " ")
+
 			db.Set(key, value)
+		case "SADD":
+			if len(cmd) < 3 {
+				continue
+			}
+			members := cmd[2:]
+
+			db.SAdd(key, members...)
 		case "DEL":
 			db.Delete(key)
 		}

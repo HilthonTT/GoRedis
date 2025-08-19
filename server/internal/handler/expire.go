@@ -9,7 +9,7 @@ import (
 )
 
 func (h *Handler) Expire(args []string) {
-	if len(args) != 3 {
+	if len(args) < 3 {
 		h.conn.Write([]byte("ERR wrong number of arguments for 'EXPIRE'\n"))
 		return
 	}

@@ -28,6 +28,7 @@ type TodoItem struct {
 }
 
 type TodoItemRepository interface {
+	GetByUserID(ctx context.Context, userID string) ([]*TodoItem, error)
 	GetByID(ctx context.Context, id string) (*TodoItem, error)
 	Create(ctx context.Context, todo *TodoItem) error
 	Update(ctx context.Context, todo *TodoItem) error

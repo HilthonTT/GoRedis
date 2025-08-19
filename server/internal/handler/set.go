@@ -6,13 +6,13 @@ import (
 )
 
 func (h *Handler) Set(args []string) {
-	if len(args) != 3 {
+	if len(args) < 3 {
 		h.conn.Write([]byte("ERR wrong number of arguments for 'SET'\n"))
 		return
 	}
 
 	key := strings.TrimSpace(args[1])
-	value := strings.TrimSpace(args[2])
+	value := strings.Join(args[2:], " ")
 
 	if key == "" {
 		h.conn.Write([]byte("ERR empty key is not allowed\n"))

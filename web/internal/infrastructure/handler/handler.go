@@ -32,14 +32,6 @@ func redirect(c *gin.Context, location string) {
 }
 
 func respondWithError(ctx *gin.Context, code int, message string) {
-	if ctx.GetHeader("HX-Request") == "true" {
-		ctx.HTML(code, "error.tmpl", gin.H{
-			"title":   "Error",
-			"message": message,
-		})
-		return
-	}
-
 	problem := gin.H{
 		"type":   "about:blank", // TODO: can use a URI for error type
 		"title":  http.StatusText(code),

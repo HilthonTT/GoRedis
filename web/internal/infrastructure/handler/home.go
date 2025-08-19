@@ -8,7 +8,15 @@ import (
 )
 
 func (h *Handler) HandleHome(c *gin.Context) {
-	if err := views.Home().Render(c.Request.Context(), c.Writer); err != nil {
+	user, err := h.auth.GetSessionUser(c.Request)
+	if err != nil {
+		redirect(c, "/login")
+		return
+	}
+
+	todos, err := h.repository.GetByUserID(c.Request.Context(), user.UserID)
+
+	if err := views.Home(user, todos).Render(c.Request.Context(), c.Writer); err != nil {
 		c.String(http.StatusInternalServerError, "Failed to render home page: %v", err)
 	}
 }
