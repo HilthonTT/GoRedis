@@ -46,6 +46,10 @@ func respondInternalError(ctx *gin.Context, message string) {
 	respondWithError(ctx, http.StatusInternalServerError, message)
 }
 
+func respondNotfound(ctx *gin.Context, message string) {
+	respondWithError(ctx, http.StatusNotFound, message)
+}
+
 func respondHTML(c *gin.Context, buffer []byte) {
 	c.Data(200, "text/html; charset=utf-8", buffer)
 }

@@ -8,7 +8,6 @@ import (
 )
 
 func (h *Handler) SMembers(args []string) {
-
 	if len(args) != 2 {
 		h.conn.Write([]byte("ERR wrong number of arguments for 'SMEMBERS'\n"))
 		return

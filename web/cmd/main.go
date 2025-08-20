@@ -62,6 +62,8 @@ func main() {
 	router.GET("/", h.HandleHome)
 	router.POST("/todos", h.HandleCreateTodo)
 	router.GET("/todos/new", h.HandleCreateTodoPage)
+	router.GET("/todos/:id", h.HandleTodoView)
+	router.DELETE("/todos/:id", h.HandleDeleteTodo)
 
 	_, b, _, _ := runtime.Caller(0)                  // gets this file's path
 	basePath := filepath.Join(filepath.Dir(b), "..") // go up one level

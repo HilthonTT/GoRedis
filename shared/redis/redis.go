@@ -115,6 +115,15 @@ func (c *Client) Delete(key string) error {
 		return fmt.Errorf("failed to send DEL command: %w", err)
 	}
 
+	resp, err := c.readResponse()
+	if err != nil {
+		return fmt.Errorf("failed to read DEL response: %w", err)
+	}
+
+	if resp != "OK" { // Adjust if you change the server to return an integer like ":1"
+		return fmt.Errorf("DEL failed: %s", resp)
+	}
+
 	return nil
 }
 

@@ -96,8 +96,14 @@ templ TodoItem(t *domain.TodoItem) {
 
 		<!-- Actions -->
 		<div class="flex shrink-0 items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+			<a
+				href={ fmt.Sprintf("/todos/%s", t.ID) }
+				class="rounded-xl border border-blue-600 bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer">
+				Info
+			</a>
+
 			<button
-				class="rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+				class="rounded-xl cursor-pointer border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
 				hx-get={ fmt.Sprintf("/todos/%s/edit", t.ID) }
 				hx-target="#modal"
 				hx-swap="innerHTML">
@@ -105,7 +111,7 @@ templ TodoItem(t *domain.TodoItem) {
 			</button>
 
 			<button
-				class="rounded-xl bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+				class="rounded-xl cursor-pointer bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
 				hx-delete={ fmt.Sprintf("/todos/%s", t.ID) }
 				hx-target={ "#todo-" + t.ID }
 				hx-swap="outerHTML"

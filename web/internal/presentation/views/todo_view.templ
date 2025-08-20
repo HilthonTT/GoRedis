@@ -1,0 +1,15 @@
+package views
+
+import (
+	"goredis-web/internal/domain"
+	"goredis-web/internal/presentation/layouts"
+	"github.com/markbates/goth"
+)
+
+templ TodoView(user goth.User, todo *domain.TodoItem) {
+	@layouts.RootLayout(user) {
+		<div class="mx-auto max-w-3xl p-6">
+			@TodoItem(todo)
+		</div>
+	}
+}

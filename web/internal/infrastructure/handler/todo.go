@@ -40,10 +40,8 @@ type CreateTodoRequest struct {
 }
 
 func (h *Handler) HandleCreateTodo(c *gin.Context) {
-
 	user, err := h.auth.GetSessionUser(c.Request)
 	if err != nil {
-
 		respondWithError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
@@ -89,7 +87,6 @@ func (h *Handler) HandleCreateTodo(c *gin.Context) {
 	}
 
 	if err := h.repository.Create(c.Request.Context(), todo); err != nil {
-
 		respondInternalError(c, "failed to create todo")
 		return
 	}
@@ -102,4 +99,68 @@ func (h *Handler) HandleCreateTodo(c *gin.Context) {
 	// }
 
 	c.JSON(http.StatusCreated, todo)
+}
+
+func (h *Handler) HandleTodoView(c *gin.Context) {
+	user, err := h.auth.GetSessionUser(c.Request)
+	if err != nil {
+		redirect(c, "/login")
+		return
+	}
+
+	todoId := c.Param("id")
+
+	ctx := c.Request.Context()
+	todo, err := h.repository.GetByID(ctx, todoId)
+	if err != nil {
+		respondInternalError(c, "failed to load todo")
+		return
+	}
+
+	if todo == nil {
+		redirect(c, "/")
+		return
+	}
+
+	buffer, err := renderHTML(c, views.TodoView(user, todo))
+	if err != nil {
+		redirect(c, "/")
+		return
+	}
+
+	respondHTML(c, buffer)
+}
+
+func (h *Handler) HandleDeleteTodo(c *gin.Context) {
+	user, err := h.auth.GetSessionUser(c.Request)
+	if err != nil {
+		redirect(c, "/login")
+		return
+	}
+
+	todoId := c.Param("id")
+
+	ctx := c.Request.Context()
+	todo, err := h.repository.GetByID(ctx, todoId)
+	if err != nil {
+		respondInternalError(c, "failed to load todo")
+		return
+	}
+
+	if todo == nil {
+		respondNotfound(c, "todo not found")
+		return
+	}
+
+	if todo.UserID != user.UserID {
+		respondWithError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	if err := h.repository.Delete(ctx, todo); err != nil {
+		respondInternalError(c, "failed to delete todo")
+		return
+	}
+
+	c.Status(http.StatusOK)
 }

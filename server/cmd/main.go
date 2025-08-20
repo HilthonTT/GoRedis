@@ -81,6 +81,8 @@ func handleConnection(conn net.Conn, handler *handler.Handler, cfg *config.Confi
 			handler.SMembers(args)
 		case "SREM":
 			handler.SRem(args)
+		case "DEL":
+			handler.Del(args)
 		default:
 			fmt.Fprintln(conn, "ERR unknown command")
 		}
