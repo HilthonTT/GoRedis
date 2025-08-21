@@ -64,6 +64,9 @@ func main() {
 	router.GET("/todos/new", h.HandleCreateTodoPage)
 	router.GET("/todos/:id", h.HandleTodoView)
 	router.DELETE("/todos/:id", h.HandleDeleteTodo)
+	router.GET("/todos/:id/edit", h.OpenEditTodoModal)
+	router.GET("/todos/modal/close", h.CloseModal)
+	router.PUT("/todos/:id", h.HandleUpdateTodo)
 
 	_, b, _, _ := runtime.Caller(0)                  // gets this file's path
 	basePath := filepath.Join(filepath.Dir(b), "..") // go up one level

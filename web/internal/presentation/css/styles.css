@@ -126,3 +126,10 @@
     @apply bg-black text-white min-h-screen;
   }
 }
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}

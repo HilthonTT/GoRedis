@@ -120,7 +120,7 @@ func (c *Client) Delete(key string) error {
 		return fmt.Errorf("failed to read DEL response: %w", err)
 	}
 
-	if resp != "OK" { // Adjust if you change the server to return an integer like ":1"
+	if resp != "OK" {
 		return fmt.Errorf("DEL failed: %s", resp)
 	}
 

@@ -6,7 +6,99 @@ import (
 	"goredis-web/internal/presentation/layouts"
 	"goredis-web/internal/infrastructure/utils"
 	"github.com/markbates/goth"
+	"strings"
 )
+
+templ EditTodoModal(user goth.User, t *domain.TodoItem) {
+	<div 
+		id="modal" 
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 bg-opacity-50"
+		hx-target="this" 
+		hx-swap="outerHTML">
+		<div class="bg-white rounded-2xl p-6 w-full max-w-md">
+			<h2 class="text-xl font-semibold mb-4">Edit Todo</h2>
+			<form 
+				enctype="multipart/form-data"
+				hx-put={ fmt.Sprintf("/todos/%s", t.ID) }
+				hx-target={ fmt.Sprintf("#todo-%s", t.ID) }
+				hx-swap="outerHTML"
+				class="space-y-4">
+				<!-- Description -->
+				<div>
+					<label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+					<textarea
+						id="description"
+						name="description"
+						class="mt-1 w-full rounded-md border border-gray-300 p-2 text-sm focus:ring-red-500 focus:border-red-500"
+						rows="4"
+						required
+					>{ t.Description }</textarea>
+				</div>
+
+				<!-- Priority -->
+				<div>
+					<label for="priority" class="block text-sm font-medium text-gray-700">Priority</label>
+					<select
+						id="priority"
+						name="priority"
+						class="mt-1 w-full rounded-md border border-gray-300 p-2 text-sm focus:ring-red-500 focus:border-red-500"
+					>
+						<option value="low" selected?={ t.Priority == domain.Low }>Low</option>
+						<option value="medium" selected?={ t.Priority == domain.Medium }>Medium</option>
+						<option value="high" selected?={ t.Priority == domain.High }>High</option>
+					</select>
+				</div>
+
+				<!-- Due Date -->
+				<div>
+					<label for="due_date" class="block text-sm font-medium text-gray-700">Due Date</label>
+					<input
+						id="dueDate"
+						name="dueDate"
+						type="date"
+						value={ t.DueDate.Format("2006-01-02") }
+						class="mt-1 w-full rounded-md border border-gray-300 p-2 text-sm focus:ring-red-500 focus:border-red-500"
+					/>
+				</div>
+
+				<!-- Labels (optional, comma-separated) -->
+				<div>
+					<label for="labels" class="block text-sm font-medium text-gray-700">Labels (comma-separated)</label>
+					<input
+						id="labels"
+						name="labels"
+						type="text"
+						value={ strings.Join(t.Labels, ", ") }
+						class="mt-1 w-full rounded-md border border-gray-300 p-2 text-sm focus:ring-red-500 focus:border-red-500"
+					/>
+				</div>
+
+				<!-- Form Actions -->
+				<div class="flex justify-end gap-2">
+					<button
+						type="button"
+						class="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+						hx-get="/todos/modal/close"
+						hx-target="#modal"
+						hx-swap="outerHTML"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+					>
+						Save
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+}
+
+templ CloseModal() {
+	<div id="modal" hx-swap-oob="true"></div>
+}
 
 templ Home(user goth.User, todos []*domain.TodoItem) {
 	@layouts.RootLayout(user) {
@@ -15,7 +107,7 @@ templ Home(user goth.User, todos []*domain.TodoItem) {
 				<h1 class="text-2xl font-semibold tracking-tight">Your Todos</h1>
 				<a
                     href="/todos/new"
-					class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+					class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
 					New Todo
 				</a>
 			</div>
@@ -26,7 +118,7 @@ templ Home(user goth.User, todos []*domain.TodoItem) {
 					<p class="text-gray-400 text-sm">Click “New Todo” to create your first item.</p>
 				</div>
 			} else {
-				<div class="flex flex-col gap-y-3">
+				<div id="todo-list" class="flex flex-col gap-y-3">
 					for _, t := range todos {
 						@TodoItem(t)
 					}
@@ -45,7 +137,7 @@ templ TodoItem(t *domain.TodoItem) {
 		<input
 			type="checkbox"
 			checked?={ t.IsCompleted }
-			class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+			class="mt-1 h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
 			hx-post={ fmt.Sprintf("/todos/%s/toggle", t.ID) }
 			hx-target={ "#todo-" + t.ID }
 			hx-swap="outerHTML" />
